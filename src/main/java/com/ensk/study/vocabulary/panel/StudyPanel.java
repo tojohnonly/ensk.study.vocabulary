@@ -13,6 +13,9 @@ import com.ensk.study.vocabulary.ui.JRoundedButton;
 
 public class StudyPanel extends JPanel {
 
+    private static final int LONG_EXAMPLE_THRESHOLD = 150;
+    private static final float LONG_EXAMPLE_FONT_SIZE = 13f;
+
     // Word Label
     private static JAnimationLabel wordLabel;
     // Score Label
@@ -165,7 +168,7 @@ public class StudyPanel extends JPanel {
             public void mouseReleased(MouseEvent e) {
                 DataProcessor.updateScore(DataProcessor.getCurrentWord(), 1);
                 translationLabel.setAnimationText(DataProcessor.getCurrentWord().getTranslation());
-                exampleLabel.setAnimationText(DataProcessor.getCurrentWord().getExample());
+                setExampleText(DataProcessor.getCurrentWord().getExample());
                 dkBtn.setVisible(false);
                 hmBtn.setVisible(false);
                 kimBtn.setVisible(false);
@@ -190,7 +193,7 @@ public class StudyPanel extends JPanel {
             public void mouseReleased(MouseEvent e) {
                 DataProcessor.updateScore(DataProcessor.getCurrentWord(), 2);
                 translationLabel.setAnimationText(DataProcessor.getCurrentWord().getTranslation());
-                exampleLabel.setAnimationText(DataProcessor.getCurrentWord().getExample());
+                setExampleText(DataProcessor.getCurrentWord().getExample());
                 dkBtn.setVisible(false);
                 hmBtn.setVisible(false);
                 kimBtn.setVisible(false);
@@ -215,7 +218,7 @@ public class StudyPanel extends JPanel {
             public void mouseReleased(MouseEvent e) {
                 DataProcessor.updateScore(DataProcessor.getCurrentWord(), 3);
                 translationLabel.setAnimationText(DataProcessor.getCurrentWord().getTranslation());
-                exampleLabel.setAnimationText(DataProcessor.getCurrentWord().getExample());
+                setExampleText(DataProcessor.getCurrentWord().getExample());
                 dkBtn.setVisible(false);
                 hmBtn.setVisible(false);
                 kimBtn.setVisible(false);
@@ -243,7 +246,7 @@ public class StudyPanel extends JPanel {
                 scoreLabel.setAnimationText(String.format("[%.2f]", DataProcessor.getCurrentWord().getLearnScore()));
                 pronounceLabel.setAnimationText(DataProcessor.getCurrentWord().getPronounce());
                 translationLabel.setAnimationText("*****************");
-                exampleLabel.setAnimationText("******************************");
+                setExampleText("******************************");
                 dkBtn.setVisible(true);
                 hmBtn.setVisible(true);
                 kimBtn.setVisible(true);
@@ -300,6 +303,28 @@ public class StudyPanel extends JPanel {
 
 
 
+    /**
+     * 根据例句长度调整学习页字号，并更新例句显示内容。
+     * <p>
+     *
+     * @author Codex
+     * @date 2026/10/20
+     * @version 1.0.0
+     * @param example 要显示的例句
+     */
+    private static void setExampleText(String example) {
+        String displayText = null == example ? "" : example;
+        // 长例句缩小字号以适应固定显示区域，短例句沿用默认字号
+        if (displayText.codePointCount(0, displayText.length()) > LONG_EXAMPLE_THRESHOLD) {
+            exampleLabel.setFont(EsvConfig.exampleFont.deriveFont(LONG_EXAMPLE_FONT_SIZE));
+        } else {
+            exampleLabel.setFont(EsvConfig.exampleFont);
+        }
+        exampleLabel.setAnimationText(displayText);
+    }
+
+
+
     public void preparePanel() {
         dkBtn.setVisible(true);
         hmBtn.setVisible(true);
@@ -314,7 +339,7 @@ public class StudyPanel extends JPanel {
         scoreLabel.setAnimationText(String.format("[%.2f]", DataProcessor.getCurrentWord().getLearnScore()));
         pronounceLabel.setAnimationText(DataProcessor.getCurrentWord().getPronounce());
         translationLabel.setAnimationText("*****************");
-        exampleLabel.setAnimationText("******************************");
+        setExampleText("******************************");
     }
 
 
@@ -322,7 +347,7 @@ public class StudyPanel extends JPanel {
         wordLabel.setAnimationText(word);
         pronounceLabel.setAnimationText(pronounce);
         translationLabel.setAnimationText(translation);
-        exampleLabel.setAnimationText(example);
+        setExampleText(example);
     }
 
 }
