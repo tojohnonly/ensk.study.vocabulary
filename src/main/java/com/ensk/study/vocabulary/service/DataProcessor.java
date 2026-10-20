@@ -6,9 +6,11 @@ import com.ensk.study.vocabulary.entity.WordEntity;
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -123,7 +125,7 @@ public class DataProcessor {
             if (mode == 1) {
                 sql = "SELECT * FROM VOCABULARY WHERE LEARN_SCORE <= 0 LIMIT 0,1";
             } else if (mode == 2) {
-                sql = "SELECT * FROM VOCABULARY WHERE LEARN_SCORE > 0 AND LEARN_SCORE < 0.8 LIMIT 0,1";
+                sql = "SELECT * FROM VOCABULARY WHERE LEARN_SCORE > 0 AND LEARN_SCORE < 0.7 LIMIT 0,1";
             } else if (mode == 3) {
                 sql = "SELECT * FROM VOCABULARY LIMIT 0,1";
             } else if (mode == 4) {
@@ -374,49 +376,52 @@ public class DataProcessor {
 
 
 
+    /**
+     * 将编辑后的单词内容持久化，并在数据库更新成功后同步当前实体。
+     * <p>
+     *
+     * @author Codex
+     * @date 2026/10/20
+     * @version 1.0.0
+     * @param word 单词拼写
+     * @param pronounce 单词发音
+     * @param translation 单词释义
+     * @param example 单词例句
+     */
     public static void updateCurrentWord(String word, String pronounce, String translation, String example) {
-        word = word.replace("'", "''");
-        pronounce = pronounce.replace("'", "''");
-        translation = translation.replace("'", "''");
-        example = example.replace("'", "''");
-        StringBuilder sqlUpdateWord = new StringBuilder("UPDATE VOCABULARY SET ");
-        Boolean needUpdate = false;
-        if (!DataProcessor.checkEqual(word, DataProcessor.getCurrentWord().getWord())) {
-            DataProcessor.getCurrentWord().setWord(word);
-            sqlUpdateWord.append("WORD = '" + word.replace("'", "''") + "', ");
-            needUpdate = true;
+        WordEntity currentWord = DataProcessor.getCurrentWord();
+        if (DataProcessor.checkEqual(word, currentWord.getWord())
+                && DataProcessor.checkEqual(pronounce, currentWord.getPronounce())
+                && DataProcessor.checkEqual(translation, currentWord.getTranslation())
+                && DataProcessor.checkEqual(example, currentWord.getExample())) {
+            return;
         }
-        if (!DataProcessor.checkEqual(pronounce, DataProcessor.getCurrentWord().getPronounce())) {
-            DataProcessor.getCurrentWord().setPronounce(pronounce);
-            if (null == example || example.equals("")) {
-                sqlUpdateWord.append("PRONOUNCE = NULL, ");
+
+        String sql = "UPDATE VOCABULARY SET WORD = ?, PRONOUNCE = ?, TRANSLATION = ?, EXAMPLE = ? WHERE ID = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            // 使用参数化语句保存原始文本，并将空的可选字段写为 NULL
+            preparedStatement.setString(1, word);
+            if (null == pronounce || pronounce.isEmpty()) {
+                preparedStatement.setNull(2, Types.VARCHAR);
             } else {
-                sqlUpdateWord.append("PRONOUNCE = '" + pronounce.replace("'", "''") + "', ");
+                preparedStatement.setString(2, pronounce);
             }
-            needUpdate = true;
-        }
-        if (!DataProcessor.checkEqual(translation, DataProcessor.getCurrentWord().getTranslation())) {
-            DataProcessor.getCurrentWord().setTranslation(translation);
-            sqlUpdateWord.append("TRANSLATION = '" + translation.replace("'", "''") + "', ");
-            needUpdate = true;
-        }
-        if (!DataProcessor.checkEqual(example, DataProcessor.getCurrentWord().getExample())) {
-            DataProcessor.getCurrentWord().setExample(example);
-            if (null == example || example.equals("")) {
-                sqlUpdateWord.append("EXAMPLE = NULL, ");
+            preparedStatement.setString(3, translation);
+            if (null == example || example.isEmpty()) {
+                preparedStatement.setNull(4, Types.VARCHAR);
             } else {
-                sqlUpdateWord.append("EXAMPLE = '" + example.replace("'", "''") + "', ");
+                preparedStatement.setString(4, example);
             }
-            needUpdate = true;
-        }
-        if (needUpdate) {
-            String sql = sqlUpdateWord.substring(0, sqlUpdateWord.length() - 2) + " WHERE ID = " + DataProcessor.getCurrentWord().getId();
-            try {
-                statement.executeUpdate(sql);
-            } catch (SQLException e) {
-                System.err.println("Update Current Word Error: " + e.getMessage());
-                throw new RuntimeException("Update Current Word Error: " + e.getMessage());
-            }
+            preparedStatement.setInt(5, currentWord.getId());
+            preparedStatement.executeUpdate();
+
+            currentWord.setWord(word);
+            currentWord.setPronounce(null == pronounce || pronounce.isEmpty() ? null : pronounce);
+            currentWord.setTranslation(translation);
+            currentWord.setExample(null == example || example.isEmpty() ? null : example);
+        } catch (SQLException e) {
+            System.err.println("Update Current Word Error: " + e.getMessage());
+            throw new RuntimeException("Update Current Word Error: " + e.getMessage());
         }
     }
 
