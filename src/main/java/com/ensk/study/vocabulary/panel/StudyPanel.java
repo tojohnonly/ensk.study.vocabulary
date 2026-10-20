@@ -126,7 +126,7 @@ public class StudyPanel extends JPanel {
         editBtn.setVisible(false);
 
         // Back to Mode Select Button
-        btmBtn = new JRoundedButton("Mode");
+        btmBtn = new JRoundedButton("Back");
         btmBtn.setBounds(330, 230, 60, 35);
         btmBtn.setForeground(Color.WHITE);
         btmBtn.setFont(EsvConfig.buttonFont);
